@@ -1,0 +1,97 @@
+//+------------------------------------------------------------------+
+//|                                            HistoricalData EA.mq5 |
+//|                                  Copyright 2024, MetaQuotes Ltd. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2024, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+
+//Defining every function in this line of code
+string fileName = "historyDATA2.csv";
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void DownloadAndStoreHistoryData(string symbol, ENUM_TIMEFRAMES timeframe,
+                                 datetime startTime, datetime endTime)
+  {
+//create a file and open it
+   int fileHandle = FileOpen(fileName,FILE_WRITE|FILE_CSV,',');
+   if(fileHandle == INVALID_HANDLE)
+     {
+      Print("Unable to open the file: ",fileName);
+      return;
+     }
+
+//Price data collection
+   MqlRates rates[];
+   int copiedRates = CopyRates(symbol, timeframe, startTime, endTime, rates);
+   if(copiedRates < 0)
+     {
+      Print("Failed to retrieve price data from the file: ",fileName);
+      FileClose(fileHandle);
+      return;
+     }
+// continue to get  the prices of a bar == OHLC(open,high,low,close)
+   for(int i = 0; i < copiedRates; i++)
+     {
+      datetime timeStamp = rates[i].time;
+      double open = rates[i].open;
+      double high = rates[i].high;
+      double low = rates[i].low;
+      double close = rates[i].close;
+      long volume = rates[i].tick_volume;
+
+      string Time_Str = TimeToString(timeStamp);
+      StringReplace(Time_Str," ",",");
+
+      //store it in a single row
+      string lineRow =  Time_Str + "," +
+                        DoubleToString(open,_Digits) + "," +
+                        DoubleToString(high,_Digits) + "," +
+                        DoubleToString(low,_Digits) + "," +
+                        DoubleToString(close,_Digits) + "," +
+                        DoubleToString(volume,_Digits);
+
+      FileWriteString(fileHandle,lineRow);
+      //Add a new line after each data storage iteration
+      FileWriteString(fileHandle,"\n");
+     }
+   FileClose(fileHandle);
+   Print("Price Data Downloaded And Stored In: ",fileName);
+  }
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+  {
+//---
+//In this case, the downloaded data is from January 2023 to January 2024
+   string symbol = "EURUSD";
+   ENUM_TIMEFRAMES tf = PERIOD_H1;
+   datetime startDate = D'2023.01.02 00:00:00';
+   datetime endDate = D'2024.01.10 00:00:00';
+
+   DownloadAndStoreHistoryData(symbol,tf,startDate,endDate);
+//---
+   return(INIT_SUCCEEDED);
+  }
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+  {
+//---
+
+  }
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+  {
+//---
+
+  }
+//+------------------------------------------------------------------+
